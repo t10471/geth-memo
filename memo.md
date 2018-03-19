@@ -28,6 +28,18 @@ configNodeを作る
 	setNodeKey(ctx, cfg)
 	setNAT(ctx, cfg)
 	setListenAddress(ctx, cfg)
+  // 起動nodeの決定?
 	setBootstrapNodes(ctx, cfg)
 	setBootstrapNodesV5(ctx, cfg)
+  // light mode (client or server) の判定
+  // DiscoveryV5を使うか判定
+  // developer mode (p2pしない) 判定
 ```
+
+# setIPC
+プライベートネットの場合に使う?
+IPCPathを設定する
+
+node.New
+
+AccountManagerを作る
