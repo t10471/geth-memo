@@ -1,8 +1,11 @@
 
-## まとめ
+# まとめ
 makeFullNode
 
 configNodeを作る
+
+# makeConfigNode
+configを作成
 
 ## config
 ```
@@ -23,7 +26,7 @@ configNodeを作る
 	setNodeUserIdent(ctx, cfg)
 ```
 
-# SetP2PConfig
+## SetNodeConfig > SetP2PConfig
 ```
 	setNodeKey(ctx, cfg)
 	setNAT(ctx, cfg)
@@ -36,10 +39,12 @@ configNodeを作る
   // developer mode (p2pしない) 判定
 ```
 
-# setIPC
+### SetNodeConfig > SetP2PConfig > setIPC
 プライベートネットの場合に使う?
 IPCPathを設定する
 
-node.New
-
+## node.New
+makeAccountManager(conf)
 AccountManagerを作る
+
+keystoreを作成
