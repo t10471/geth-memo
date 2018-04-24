@@ -621,3 +621,178 @@ func (pm *ProtocolManager) Start(maxPeers int) {
 ```
 
 ## (n *Node) Start() startRPC
+n.startInProc(apis)
+unixドメインソケットを開いてサーバを起動
+startIPC(apis)
+tcpソケットを開いてhttpサーバを起動
+startHTTP(n.httpEndpoint, apis, n.config.HTTPModules, n.config.HTTPCors, n.config.HTTPVirtualHosts)
+tcpソケットを開いてwebsocketサーバを起動
+n.startWS(n.wsEndpoint, apis, n.config.WSModules, n.config.WSOrigins, n.config.WSExposeAll)
+
+startInProc
+```go
+func (n *Node) startInProc(apis []rpc.API) error {
+	// Register all the APIs exposed by the services
+	handler := rpc.NewServer()
+	for _, api := range apis {
+		if err := handler.RegisterName(api.Namespace, api.Service); err != nil {
+			return err
+		}
+		n.log.Debug("InProc registered", "service", api.Service, "namespace", api.Namespace)
+	}
+	n.inprocHandler = handler
+	return nil
+}
+
+func NewServer() *Server {
+	server := &Server{
+		services: make(serviceRegistry),
+		codecs:   set.New(),
+		run:      1,
+	}
+
+	// register a default service which will provide meta information about the RPC service such as the services and
+	// methods it offers.
+	rpcService := &RPCService{server}
+	server.RegisterName(MetadataApi, rpcService)
+
+	return server
+}
+```
+startIPC
+```go
+func (n *Node) startIPC(apis []rpc.API) error {
+	if n.ipcEndpoint == "" {
+		return nil // IPC disabled.
+	}
+	listener, handler, err := rpc.StartIPCEndpoint(n.ipcEndpoint, apis)
+	if err != nil {
+		return err
+	}
+	n.ipcListener = listener
+	n.ipcHandler = handler
+	n.log.Info("IPC endpoint opened", "url", n.ipcEndpoint)
+	return nil
+}
+
+func StartIPCEndpoint(ipcEndpoint string, apis []API) (net.Listener, *Server, error) {
+	// Register all the APIs exposed by the services.
+	// 上のNewServerと一緒
+	handler := NewServer()
+	for _, api := range apis {
+		if err := handler.RegisterName(api.Namespace, api.Service); err != nil {
+			return nil, nil, err
+		}
+		log.Debug("IPC registered", "namespace", api.Namespace)
+	}
+	// All APIs registered, start the IPC listener.
+	listener, err := ipcListen(ipcEndpoint)
+	if err != nil {
+		return nil, nil, err
+	}
+	go handler.ServeListener(listener)
+	return listener, handler, nil
+}
+
+```
+startHTTP
+```go
+func (n *Node) startHTTP(endpoint string, apis []rpc.API, modules []string, cors []string, vhosts []string) error {
+	// Short circuit if the HTTP endpoint isn't being exposed
+	if endpoint == "" {
+		return nil
+	}
+	listener, handler, err := rpc.StartHTTPEndpoint(endpoint, apis, modules, cors, vhosts)
+	if err != nil {
+		return err
+	}
+	n.log.Info("HTTP endpoint opened", "url", fmt.Sprintf("http://%s", endpoint), "cors", strings.Join(cors, ","), "vhosts", strings.Join(vhosts, ","))
+	// All listeners booted successfully
+	n.httpEndpoint = endpoint
+	n.httpListener = listener
+	n.httpHandler = handler
+
+	return nil
+}
+```
+startWS
+```go
+func (n *Node) startWS(endpoint string, apis []rpc.API, modules []string, wsOrigins []string, exposeAll bool) error {
+	// Short circuit if the WS endpoint isn't being exposed
+	if endpoint == "" {
+		return nil
+	}
+	listener, handler, err := rpc.StartWSEndpoint(endpoint, apis, modules, wsOrigins, exposeAll)
+	if err != nil {
+		return err
+	}
+	n.log.Info("WebSocket endpoint opened", "url", fmt.Sprintf("ws://%s", listener.Addr()))
+	// All listeners booted successfully
+	n.wsEndpoint = endpoint
+	n.wsListener = listener
+	n.wsHandler = handler
+
+	return nil
+}
+```
+
+stack.Start()が終わったらシグナルを待ち受ける
+
+```go
+	go func() {
+		sigc := make(chan os.Signal, 1)
+		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Stop(sigc)
+		<-sigc
+		go stack.Stop()
+		for i := 10; i > 0; i-- {
+			<-sigc
+			if i > 1 {
+				log.Warn("Already shutting down, interrupt more to panic.", "times", i-1)
+			}
+		}
+	}()
+```
+
+utils.StartNode(stack)が終わったら
+1番目のkeystoreのアカウントをunlockする
+
+```go
+	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
+
+	passwords := utils.MakePasswordList(ctx)
+	unlocks := strings.Split(ctx.GlobalString(utils.UnlockedAccountFlag.Name), ",")
+	for i, account := range unlocks {
+		if trimmed := strings.TrimSpace(account); trimmed != "" {
+			unlockAccount(ctx, ks, trimmed, i, passwords)
+		}
+	}
+
+```
+
+AccountManagerがeventを待ち受ける
+
+```go
+	events := make(chan accounts.WalletEvent, 16)
+	stack.AccountManager().Subscribe(events)
+
+type WalletEventType int
+
+const (
+	// WalletArrived is fired when a new wallet is detected either via USB or via
+	// a filesystem event in the keystore.
+	WalletArrived WalletEventType = iota
+	// WalletOpened is fired when a wallet is successfully opened with the purpose
+	// of starting any background processes such as automatic key derivation.
+	WalletOpened
+	// WalletDropped
+	WalletDropped
+)
+
+// WalletEvent is an event fired by an account backend when a wallet arrival or
+// departure is detected.
+type WalletEvent struct {
+	Wallet Wallet          // Wallet instance arrived or departed
+	Kind   WalletEventType // Event type that happened in the system
+}
+```
