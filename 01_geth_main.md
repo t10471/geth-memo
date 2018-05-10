@@ -558,7 +558,7 @@ Resiterで登録したprotocolのサービスをServer.Config.Protcolsに登録�
 runningはp2p.Server
 
 ### discoverを設定する
-discover.Configをセットアップしてntab(node table)に登録する
+discover.Configをセットアップしてntab(node table)に登録する  
 udpのセットアップをしてListenする
 
 dialStateを作成する
@@ -621,12 +621,12 @@ func (pm *ProtocolManager) Start(maxPeers int) {
 ```
 
 ## (n *Node) Start() startRPC
-n.startInProc(apis)
-unixドメインソケットを開いてサーバを起動
-startIPC(apis)
-tcpソケットを開いてhttpサーバを起動
-startHTTP(n.httpEndpoint, apis, n.config.HTTPModules, n.config.HTTPCors, n.config.HTTPVirtualHosts)
-tcpソケットを開いてwebsocketサーバを起動
+n.startInProc(apis)  
+unixドメインソケットを開いてサーバを起動  
+startIPC(apis)  
+tcpソケットを開いてhttpサーバを起動  
+startHTTP(n.httpEndpoint, apis, n.config.HTTPModules, n.config.HTTPCors, n.config.HTTPVirtualHosts)  
+tcpソケットを開いてwebsocketサーバを起動  
 n.startWS(n.wsEndpoint, apis, n.config.WSModules, n.config.WSOrigins, n.config.WSExposeAll)
 
 startInProc
@@ -754,7 +754,7 @@ stack.Start()が終わったらシグナルを待ち受ける
 	}()
 ```
 
-utils.StartNode(stack)が終わったら
+utils.StartNode(stack)が終わったら  
 1番目のkeystoreのアカウントをunlockする
 
 ```go
