@@ -28,12 +28,12 @@ configを作成
 	setNodeKey(ctx, cfg)
 	setNAT(ctx, cfg)
 	setListenAddress(ctx, cfg)
-  // 起動nodeの決定?
+	// 起動nodeの決定?
 	setBootstrapNodes(ctx, cfg)
 	setBootstrapNodesV5(ctx, cfg)
-  // light mode (client or server) の判定
-  // DiscoveryV5を使うか判定
-  // developer mode (p2pしない) 判定
+	// light mode (client or server) の判定
+	// DiscoveryV5を使うか判定
+	// developer mode (p2pしない) 判定
 ```
 
 ### makeFullNode > makeConfigNode > SetNodeConfig > SetP2PConfig > setIPC
@@ -106,7 +106,7 @@ type Account struct {
 }
 ```
 
-Backend KeyStoreを使ってAccountManagerを作成する
+Backend KeyStoreを使ってAccountManagerを作成する  
 AccountManagerはWalletのイベント監視をしている
 
 ```go
@@ -179,9 +179,9 @@ func (am *Manager) update() {
 
 ```
 
-BackendのSubscribeはKeyStoreの。
-WalletEventをFeedにしてSubscribeしてSubscriptionにして返す
-ていきていにWalletを更新する
+BackendのSubscribeはKeyStoreの。  
+WalletEventをFeedにしてSubscribeしてSubscriptionにして返す　　
+定期的にWalletを更新する
 ```go
 func (ks *KeyStore) Subscribe(sink chan<- accounts.WalletEvent) event.Subscription {
 	ks.mu.Lock()
@@ -300,8 +300,8 @@ func (ks *KeyStore) refreshWallets() {
 	}
 }
 ```
-Nodeを返す
-amはaccountManager
+Nodeを返す　　
+amはaccountManager　　
 ephemeralKeystoreはkeystoreのディレクトリパス
 ```go
 	return &Node{
